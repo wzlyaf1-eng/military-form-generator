@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>استمارة المعلومات الشخصية</title>
+    <style>
+        :root { --primary: #2b5b3f; --bg: #f4f7f5; }
+        body { font-family: sans-serif; background-color: var(--bg); margin: 0; padding: 15px; }
+        .container { max-width: 550px; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin: 0 auto; }
+        h2 { text-align: center; color: var(--primary); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 11px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        button { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); color:white; text-align:center; padding-top:200px; font-size:20px; z-index:9999; }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay" class="overlay">جاري معالجة البيانات وتوليد ملف الوورد المعتمد... يرجى الانتظار ⏳</div>
+
+<div class="container">
+    <h2>استمارة المعلومات الشخصية</h2>
+    <form id="uploadForm">
+        <div class="form-group"><label>صورة الطالب بالزي العسكري حصراً:</label><input type="file" name="studentPhoto" accept="image/*" required></div>
+        <div class="form-group"><label>الرقم الإحصائي:</label><input type="text" name="statNum"></div>
+        <div class="form-group"><label>الصنف:</label><input type="text" name="classType" required></div>
+        <div class="form-group"><label>الاسم الخماسي واللقب:</label><input type="text" name="fullName" required></div>
+        <div class="form-group"><label>الأمر الصادر بالتعيين:</label><input type="text" name="appointmentOrder" placeholder="الجيش - هيئة الحشد الشعبي" required></div>
+        <div class="form-group"><label>تاريخ دخولك السلك العسكري:</label><input type="text" name="armyJoinDate" required></div>
+        <div class="form-group"><label>تاريخ التحاقك بالكلية العسكرية:</label><input type="text" name="collegeJoinDate" required></div>
+        <div class="form-group"><label>الوحدة السابقة:</label><input type="text" name="prevUnit" required></div>
+        <div class="form-group"><label>مكان وتاريخ التولد:</label><input type="text" name="birthPlaceDate" required></div>
+        <div class="form-group"><label>مسقط الرأس:</label><input type="text" name="birthPlace" required></div>
+        <div class="form-group"><label>فصيلة الدم:</label><input type="text" name="bloodType" required></div>
+        <div class="form-group"><label>الحالة الزوجية:</label><input type="text" name="maritalStatus" required></div>
+        <div class="form-group"><label>اسم الزوجة الثلاثي (إن وجد):</label><input type="text" name="wifeName"></div>
+        <div class="form-group"><label>عدد الأطفال:</label><input type="number" name="childrenCount" value="0"></div>
+        <div class="form-group"><label>رقم البطاقة الوطنية:</label><input type="text" name="nationalId" required></div>
+        <div class="form-group"><label>تاريخ إصدار البطاقة الوطنية:</label><input type="text" name="nationalIdDate" required></div>
+        <div class="form-group"><label>رقم بطاقة السكن:</label><input type="text" name="housingCardNum" required></div>
+        <div class="form-group"><label>رقم البطاقة التموينية:</label><input type="text" name="rationCardNum" required></div>
+        <div class="form-group"><label>عنوان السكن الحالي وأقرب نقطة دالة:</label><input type="text" name="address" required></div>
+        <div class="form-group"><label>رقم الهاتف:</label><input type="text" name="phone" required></div>
+        <div class="form-group"><label>رقم هاتف ولي الأمر:</label><input type="text" name="parentPhone" required></div>
+        <div class="form-group"><label>الشهادات العسكرية:</label><input type="text" name="milCertificates"></div>
+        <div class="form-group"><label>الشهادات المدنية:</label><input type="text" name="civCertificates"></div>
+        <div class="form-group"><label>هل لديك إصابة:</label><input type="text" name="hasInjury" placeholder="نعم / لا" required></div>
+        <div class="form-group"><label>نسبة العجز (إن وجد):</label><input type="text" name="disabilityRate"></div>
+        
+        <button type="submit">توليد ملف الوورد الرسمي وتحميله 📥</button>
+    </form>
+</div>
+
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        document.getElementById('loadingOverlay').style.display = 'block';
+
+        const formData = new FormData(this);
+        
+        try {
+            const response = await fetch('/generate-doc', { method: 'POST', body: formData });
+            if (!response.ok) throw new Error('فشلت عملية التوليد بالسيرفر');
+
+            // استقبال الملف كـ Blob وبدء التحميل فوراً على الهاتف
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `استمارة_${formData.get('fullName')}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } catch (err) {
+            alert('حدث خطأ أثناء الاتصال بالسيرفر، تأكد من ملء الحقول ورفع الصورة بشكل صحيح.');
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>
